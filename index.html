@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#1A6B4A">
+  <meta name="description" content="Cahier de Bons Digital — Gestion des dettes clients pour boutiquiers">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CahierBons">
+  <title>Cahier de Bons Digital</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<!-- ========== ÉCRAN AUTHENTIFICATION ========== -->
+<div id="auth-screen" class="auth-screen" style="display:none">
+  <div class="auth-logo">📒</div>
+  <h1 class="auth-title">Cahier de Bons</h1>
+  <p class="auth-sub">Gérez vos dettes clients facilement</p>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin" onclick="switchAuthTab('signin')">Connexion</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Créer un compte</button>
+    </div>
+
+    <!-- Connexion -->
+    <div id="formSignin">
+      <div class="form-group">
+        <label class="form-label">Adresse email</label>
+        <input class="form-input" type="email" id="signInEmail" placeholder="votre@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="signInPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" onclick="App.handleSignIn()">Se connecter</button>
+    </div>
+
+    <!-- Inscription -->
+    <div id="formSignup" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Votre prénom</label>
+        <input class="form-input" type="text" id="signUpPrenom" placeholder="ex: Moussa">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom de votre boutique</label>
+        <input class="form-input" type="text" id="signUpBoutique" placeholder="ex: Boutique Chez Moussa">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone boutique</label>
+        <input class="form-input" type="tel" id="signUpTel" placeholder="ex: 77 123 45 67">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="signUpEmail" placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="signUpPassword" placeholder="Minimum 6 caractères">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmer le mot de passe</label>
+        <input class="form-input" type="password" id="signUpConfirm" placeholder="Répétez le mot de passe">
+      </div>
+      <button class="btn-primary" onclick="App.handleSignUp()">Créer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APPLICATION PRINCIPALE ========== -->
+<div id="app" class="app-container">
+
+  <!-- En-tête -->
+  <header class="app-header">
+    <div class="header-row">
+      <div class="header-left">
+        <div class="boutique-name" id="boutiqueName">Ma Boutique</div>
+        <div class="boutique-date" id="headerDate"></div>
+      </div>
+      <div class="header-actions">
+        <div class="offline-badge" id="offlineBadge">📴 Hors-ligne</div>
+        <button class="icon-btn" onclick="App.exportRapportGlobal()" title="Exporter rapport PDF">📄</button>
+        <button class="icon-btn" onclick="App.handleSignOut()" title="Déconnexion">🚪</button>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-val" id="statTotal">0</span>
+        <span class="stat-lbl">Dettes (FCFA)</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" id="statClients">0</span>
+        <span class="stat-lbl">Clients</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-val" id="statBons">0</span>
+        <span class="stat-lbl">Bons actifs</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" id="tab-dashboard" onclick="App.showPage('dashboard')">
+      <span class="ti">📊</span>Tableau
+    </button>
+    <button class="nav-tab" id="tab-clients" onclick="App.showPage('clients')">
+      <span class="ti">👥</span>Clients
+    </button>
+    <button class="nav-tab" id="tab-bons" onclick="App.showPage('bons')">
+      <span class="ti">📋</span>Bons
+    </button>
+  </nav>
+
+  <!-- ===== PAGE TABLEAU DE BORD ===== -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-content">
+
+      <!-- Bannière sync hors-ligne -->
+      <div class="sync-banner" id="syncBanner">
+        <span>⚠️ <span id="syncCount">0</span> opération(s) en attente de synchronisation</span>
+        <button class="sync-btn" onclick="App.syncOffline()">Synchroniser</button>
+      </div>
+
+      <div class="section-title">Résumé financier</div>
+      <div class="dash-card">
+        <div class="metric-row">
+          <span class="metric-key">💰 Total dettes en cours</span>
+          <span class="metric-val" id="dashTotalDebt" style="color:var(--danger)">0 FCFA</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">✅ Total remboursé</span>
+          <span class="metric-val" id="dashTotalPaid" style="color:var(--primary)">0 FCFA</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">📋 Nombre de bons</span>
+          <span class="metric-val" id="dashBonCount">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">👥 Nombre de clients</span>
+          <span class="metric-val" id="dashClientCount">0</span>
+        </div>
+      </div>
+
+      <div class="section-title">Clients les plus endettés</div>
+      <div class="dash-card" id="topDebtors">
+        <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Chargement...</div>
+      </div>
+
+      <div class="section-title">Bons récents</div>
+      <div id="recentBons"></div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE CLIENTS ===== -->
+  <div id="page-clients" class="page">
+    <div class="page-content">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Rechercher par nom ou téléphone..." id="clientSearch" oninput="App.filterClients()">
+      </div>
+      <button class="btn btn-add" onclick="App.openAddClient()">
+        <span>＋</span> Ajouter un client
+      </button>
+      <div id="clientsList">
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-text">Aucun client pour l'instant</div>
+          <div class="empty-sub">Appuyez sur "Ajouter un client" pour commencer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE BONS ===== -->
+  <div id="page-bons" class="page">
+    <div class="page-content">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Rechercher par client ou article..." id="bonSearch" oninput="App.filterBons()">
+      </div>
+      <button class="btn btn-add" onclick="App.openAddBon()">
+        <span>＋</span> Enregistrer un bon
+      </button>
+      <div class="filter-pills">
+        <button class="pill active" id="pill-all"     onclick="App.setBonFilter('all')">Tous</button>
+        <button class="pill"        id="pill-pending" onclick="App.setBonFilter('pending')">Non payés</button>
+        <button class="pill"        id="pill-paid"    onclick="App.setBonFilter('paid')">Remboursés</button>
+      </div>
+      <div id="bonsList">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">Aucun bon enregistré</div>
+          <div class="empty-sub">Appuyez sur "Enregistrer un bon" pour commencer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- fin app-container -->
+
+<!-- ========== MODALS ========== -->
+
+<!-- Modal : Ajouter / Modifier Client -->
+<div class="modal-overlay" id="modal-addClient" onclick="if(event.target===this)App.closeModal('addClient')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="clientModalTitle">Nouveau client</div>
+    <div class="form-group">
+      <label class="form-label">Prénom</label>
+      <input class="form-input" type="text" id="inputClientPrenom" placeholder="ex: Mariama">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom *</label>
+      <input class="form-input" type="text" id="inputClientName" placeholder="ex: Diallo">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Numéro de téléphone</label>
+      <input class="form-input" type="tel" id="inputClientPhone" placeholder="ex: 77 123 45 67">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="App.closeModal('addClient')">Annuler</button>
+      <button class="btn-save"   onclick="App.saveClient()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Ajouter / Modifier Bon -->
+<div class="modal-overlay" id="modal-addBon" onclick="if(event.target===this)App.closeModal('addBon')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="bonModalTitle">Nouveau bon</div>
+    <div class="form-group">
+      <label class="form-label">Client *</label>
+      <select class="form-input" id="inputBonClient">
+        <option value="">Choisir un client...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Montant (FCFA) *</label>
+      <input class="form-input" type="number" id="inputBonAmount" placeholder="ex: 2500" min="1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description *</label>
+      <input class="form-input" type="text" id="inputBonDesc" placeholder="ex: riz, sucre, huile, crédit...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date *</label>
+      <input class="form-input" type="date" id="inputBonDate">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="App.closeModal('addBon')">Annuler</button>
+      <button class="btn-save"   onclick="App.saveBon()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Paiement -->
+<div class="modal-overlay" id="modal-payment" onclick="if(event.target===this)App.closeModal('payment')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Enregistrer un paiement</div>
+    <div class="payment-info">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Montant restant à payer</div>
+      <div class="payment-remaining" id="payRemaining">0 FCFA</div>
+      <div class="progress-wrap" style="margin-top:10px">
+        <div class="progress-fill" id="payProgressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Montant payé (FCFA) *</label>
+      <input class="form-input" type="number" id="inputPayAmount" placeholder="ex: 1000" min="1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="App.closeModal('payment')">Annuler</button>
+      <button class="btn-save"   onclick="App.savePayment()">Confirmer le paiement</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Détail Client -->
+<div class="modal-overlay" id="modal-clientDetail" onclick="if(event.target===this)App.closeModal('clientDetail')">
+  <div class="modal" style="padding:0 0 36px 0">
+    <div class="detail-header">
+      <div class="avatar large" id="detailAvatar">?</div>
+      <div>
+        <div class="client-name" id="detailName">-</div>
+        <div class="client-phone" id="detailPhone">-</div>
+      </div>
+      <div class="debt-summary">
+        <span class="debt-summary-val" id="detailTotalDebt">0 FCFA</span>
+        <span class="debt-summary-lbl">Total dû</span>
+      </div>
+    </div>
+    <div style="padding:16px 20px">
+      <button class="btn btn-accent-full" id="detailAddBonBtn">
+        📝 Nouveau bon pour ce client
+      </button>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-sm pdf"  id="detailExportBtn" style="flex:1;padding:10px">📄 Exporter PDF</button>
+        <button class="btn btn-sm edit" id="detailEditBtn"   style="flex:1;padding:10px">✏️ Modifier</button>
+        <button class="btn btn-sm del"  id="detailDeleteBtn" style="flex:1;padding:10px">🗑️ Supprimer</button>
+      </div>
+      <div class="section-title" style="margin-top:0">Historique des bons</div>
+      <div id="clientBonsList"></div>
+    </div>
+    <div style="padding:0 20px">
+      <button class="btn-cancel" style="width:100%;padding:13px;border-radius:10px" onclick="App.closeModal('clientDetail')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== SCRIPTS ========== -->
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- jsPDF pour export PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Configuration Supabase -->
+<script src="/js/supabase.js"></script>
+<!-- Couche base de données -->
+<script src="/js/db.js"></script>
+<!-- Export PDF -->
+<script src="/js/pdf-export.js"></script>
+<!-- Application principale -->
+<script src="/js/app.js"></script>
+
+<script>
+  // Basculer entre les onglets Connexion / Inscription
+  function switchAuthTab(tab) {
+    document.getElementById('formSignin').style.display = tab === 'signin' ? 'block' : 'none';
+    document.getElementById('formSignup').style.display = tab === 'signup' ? 'block' : 'none';
+    document.getElementById('tabSignin').classList.toggle('active', tab === 'signin');
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  }
+  // Permettre d'appuyer sur Entrée dans les formulaires
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const activeModal = document.querySelector('.modal-overlay.show');
+      if (activeModal) {
+        const saveBtn = activeModal.querySelector('.btn-save');
+        if (saveBtn && !saveBtn.disabled) saveBtn.click();
+      }
+    }
+  });
+</script>
+</body>
+</html>

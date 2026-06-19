@@ -2,10 +2,13 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Playfair+Display:wght@700&display=swap');
 
 :root {
-  --primary:       #1A6B4A;
-  --primary-mid:   #2E8B5A;
-  --primary-light: #E8F5EE;
-  --primary-dark:  #124D34;
+  /* Palette Bleu de Nuit */
+  --primary:       #0F172A;
+  --primary-mid:   #1E293B;
+  --primary-light: #F1F5F9;
+  --primary-dark:  #020617;
+  
+  /* Le reste des couleurs reste inchangé */
   --accent:        #F4A526;
   --accent-light:  #FEF3DC;
   --danger:        #D64045;
@@ -156,7 +159,14 @@ select.form-input { cursor: pointer; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ========== APP LAYOUT ========== */
-.app-container { display: none; flex-direction: column; min-height: 100vh; max-width: 500px; margin: 0 auto; }
+.app-container { 
+  display: none; 
+  flex-direction: column; 
+  min-height: 100vh; 
+  max-width: 1200px; /* Changé de 500px à 1200px */
+  margin: 0 auto; 
+  width: 100%;
+}
 .app-container.visible { display: flex; }
 
 /* ---- Header ---- */
@@ -552,12 +562,52 @@ select.form-input { cursor: pointer; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 
 /* ---- Responsive desktop ---- */
-@media (min-width: 500px) {
-  body { background: #E8E5DF; }
-  .app-container { box-shadow: var(--shadow-lg); }
-}
+/* ---- Responsive desktop & Tablette ---- */
+@media (min-width: 768px) {
+  body { 
+    background: #E8E5DF; 
+    padding: 20px; /* Ajoute un peu d'espace autour sur PC */
+  }
+  
+  .app-container { 
+    box-shadow: var(--shadow-lg); 
+    border-radius: var(--radius-xl);
+    min-height: calc(100vh - 40px);
+    overflow: hidden;
+    background: var(--bg);
+  }
 
-@media (max-width: 360px) {
-  .nav-tab { font-size: 9px; }
-  .nav-tab .ti { font-size: 17px; }
+  /* Centrer le menu de navigation pour éviter qu'il soit trop étiré */
+  .nav-tabs { 
+    justify-content: center; 
+  }
+  .nav-tab { 
+    flex: none; 
+    width: 200px; 
+    font-size: 12px;
+  }
+
+  /* Transformer les listes en grilles (cartes côte à côte) */
+  #clientsList, #bonsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  
+  .client-card, .bon-card { 
+    margin-bottom: 0; 
+  }
+
+  /* Optimiser le tableau de bord */
+  .dash-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  /* Ligne de recherche plus courte */
+  .search-bar input {
+    max-width: 400px;
+  }
 }

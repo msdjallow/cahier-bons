@@ -4,7 +4,8 @@
 const PDFExport = (() => {
 
   function fmtAmount(n) {
-    return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' FCFA';
+    // Ajoute un espace simple tous les 3 chiffres pour éviter les slashes
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' FCFA';
   }
 
   function fmtDate(d) {
@@ -62,7 +63,7 @@ const PDFExport = (() => {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...GRAY);
-    if (client.telephone) doc.text('📱 ' + client.telephone, margin + 8, y + 18);
+    if (client.telephone) doc.text('Tél : ' + client.telephone, margin + 8, y + 18);
 
     // Solde total
     const totalDu = bons.reduce((s, b) => s + (parseFloat(b.montant) - parseFloat(b.montant_paye)), 0);
@@ -121,12 +122,19 @@ const PDFExport = (() => {
     const cols = [
       { label: 'Date', x: margin + 3, w: 25 },
       { label: 'Description', x: margin + 28, w: 60 },
-      { label: 'Montant', x: margin + 88, w: 30 },
-      { label: 'Payé', x: margin + 118, w: 28 },
-      { label: 'Reste', x: margin + 146, w: 28 },
+      { label: 'Montant', x: margin + 88, w: 30, alignRight: true },
+      { label: 'Payé', x: margin + 118, w: 28, alignRight: true },
+      { label: 'Reste', x: margin + 146, w: 28, alignRight: true },
       { label: 'Statut', x: margin + 175, w: 15 }
     ];
-    cols.forEach(c => doc.text(c.label, c.x, y + 5.5));
+
+    cols.forEach(c => {
+      if (c.alignRight) {
+        doc.text(c.label, c.x + c.w, y + 5.5, { align: 'right' });
+      } else {
+        doc.text(c.label, c.x, y + 5.5);
+      }
+    });
     y += 8;
 
     // Lignes
@@ -148,7 +156,7 @@ const PDFExport = (() => {
       doc.setTextColor(...DARK);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(fmtDate(bon.date_bon).replace(' 2025', '').replace(' 2024', ''), cols[0].x, y + 6);
+      doc.text(fmtDate(bon.date_bon).replace(' 2025', '').replace(' 2024', '').replace(' 2026', ''), cols[0].x, y + 6);
 
       const desc = bon.description.length > 30 ? bon.description.substring(0, 28) + '...' : bon.description;
       doc.text(desc, cols[1].x, y + 6);
@@ -280,10 +288,10 @@ const PDFExport = (() => {
     doc.setFont('helvetica', 'bold');
     doc.text('Client', margin + 3, y + 5.5);
     doc.text('Téléphone', margin + 60, y + 5.5);
-    doc.text('Bons', margin + 100, y + 5.5);
-    doc.text('Total dû', margin + 125, y + 5.5);
-    doc.text('Payé', margin + 150, y + 5.5);
-    doc.text('Reste', margin + 170, y + 5.5);
+    doc.text('Bons', margin + 105, y + 5.5);
+    doc.text('Total dû', margin + 135, y + 5.5, { align: 'right' });
+    doc.text('Payé', margin + 160, y + 5.5, { align: 'right' });
+    doc.text('Reste', margin + 180, y + 5.5, { align: 'right' });
     y += 8;
 
     const clientsSorted = clients
@@ -311,9 +319,11 @@ const PDFExport = (() => {
       doc.text(c.telephone || '-', margin + 60, y + 5.5);
       doc.text(String(c.nbBons), margin + 105, y + 5.5);
       doc.text(fmtAmount(c.total), margin + 135, y + 5.5, { align: 'right' });
+      
       doc.setTextColor(...GREEN);
       doc.text(fmtAmount(c.paye), margin + 160, y + 5.5, { align: 'right' });
-      doc.setTextColor(c.du > 0 ? ...RED : ...GREEN);
+      
+      doc.setTextColor(...(c.du > 0 ? RED : GREEN));
       doc.text(fmtAmount(c.du), margin + 180, y + 5.5, { align: 'right' });
       y += 8;
     });

@@ -75,7 +75,7 @@
 <!-- ========== APPLICATION PRINCIPALE ========== -->
 <div id="app" class="app-container">
 
-  <!-- En-tête -->
+<!-- En-tête -->
   <header class="app-header">
     <div class="header-row">
       <div class="header-left">
@@ -84,6 +84,10 @@
       </div>
       <div class="header-actions">
         <div class="offline-badge" id="offlineBadge">📴 Hors-ligne</div>
+        
+        <!-- L'icône PDF restaurée -->
+        <button class="icon-btn" onclick="App.exportRapportGlobal()" title="Exporter rapport PDF">📄</button>
+        
         <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4);" onclick="App.handleSignOut()">Déconnexion</button>
       </div>
     </div>

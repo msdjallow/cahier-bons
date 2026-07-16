@@ -523,15 +523,47 @@ const App = (() => {
 
   // ---- Auth handlers ----
   async function handleSignIn() {
-    const email    = el('signInEmail').value.trim();
+    const identifiant = el('signInIdentifiant').value.trim();
     const password = el('signInPassword').value;
-    if (!email || !password) { toast('Remplissez tous les champs', 'error'); return; }
+
+    if (!identifiant || !password) { toast('Remplissez tous les champs', 'error'); return; }
+
+    // Détection automatique : si ça contient un '@', c'est un email, sinon on nettoie le numéro
+    const isEmail = identifiant.includes('@');
+    const cleanIdentifiant = isEmail ? identifiant : identifiant.replace(/\s+/g, ''); // Enlève les espaces du tel
+
     setLoading(true);
     try {
-      await DB.signIn(email, password);
+      await DB.signIn(cleanIdentifiant, password, isEmail);
       await loadApp();
       toast('Bienvenue !', 'success');
-    } catch (e) { toast('Email ou mot de passe incorrect', 'error'); }
+    } catch (e) {
+      toast('Identifiant ou mot de passe incorrect', 'error');
+    }
+    setLoading(false);
+  }
+
+  async function handleForgotPassword() {
+    const identifiant = el('signInIdentifiant').value.trim();
+    if (!identifiant) {
+      toast('Veuillez entrer votre email ou téléphone au-dessus', 'warning');
+      el('signInIdentifiant').focus();
+      return;
+    }
+
+    const isEmail = identifiant.includes('@');
+    if (!isEmail) {
+      toast('La réinitialisation par téléphone nécessite un serveur SMS. Veuillez contacter le support.', 'warning');
+      return; // On bloque poliment pour le téléphone sans SMS
+    }
+
+    setLoading(true);
+    try {
+      await DB.resetPassword(identifiant);
+      toast('Email de réinitialisation envoyé !', 'success');
+    } catch (e) {
+      toast('Erreur : ' + e.message, 'error');
+    }
     setLoading(false);
   }
 
@@ -590,6 +622,7 @@ const App = (() => {
     handleSignIn,
     handleSignUp,
     handleSignOut,
+    handleForgotPassword,
     syncOffline,
     setBonFilter,
     filterClients: () => renderClients(),

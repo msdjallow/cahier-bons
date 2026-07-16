@@ -41,10 +41,21 @@ const DB = (() => {
     return data;
   }
 
-  async function signIn(email, password) {
-    const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+  async function signIn(identifiant, password, isEmail) {
+    const credentials = isEmail 
+      ? { email: identifiant, password: password }
+      : { phone: identifiant, password: password };
+
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword(credentials);
     if (error) throw error;
     return data;
+  }
+
+  async function resetPassword(email) {
+    const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) throw error;
   }
 
   async function signOut() {
@@ -317,7 +328,7 @@ const DB = (() => {
   function getOfflineQueueCount() { return getOfflineQueue().length; }
 
   return {
-    signUp, signIn, signOut, getSession, getBoutique,
+    signUp, signIn, signOut, getSession, getBoutique, resetPassword,
     getClients, addClient, updateClient, deleteClient,
     getBons, addBon, updateBon, deleteBon,
     addPaiement, getPaiements,
